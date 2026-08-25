@@ -69,6 +69,12 @@ fun MainTopBar(
         },
         actions = {
             if (!showSearch) {
+                IconButton(onClick = { onAction(MainAction.TestRealAllServers) }) {
+                    Icon(
+                        painterResource(R.drawable.ic_network_check_24dp),
+                        contentDescription = stringResource(R.string.title_real_ping_all_server)
+                    )
+                }
                 IconButton(onClick = { onSearchToggle(true) }) {
                     Icon(painterResource(R.drawable.ic_search_24dp), contentDescription = stringResource(R.string.acc_search))
                 }

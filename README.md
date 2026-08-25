@@ -1,4 +1,19 @@
-# v2rayNG
+# CK V2ray
+
+基于 [2dust/v2rayNG 2.3.5](https://github.com/2dust/v2rayNG/releases/tag/2.3.5) 的 Android arm64-v8a 定制版。
+
+- 使用 CK 品牌图标
+- 主界面顶栏增加“一键测试真连接延迟”按钮，并复用上游原生测速实现
+- 采用 iOS 风格的系统蓝、分组背景、圆角节点卡片及适配深色模式的视觉主题
+- `compileSdk 37` / `targetSdk 37`，最低支持 Android 7.0（API 24）
+
+[下载最新版 APK](https://github.com/ericchegncn/CK-V2ray/releases/latest)
+
+除上述品牌、测速入口和视觉层调整外，代理与配置逻辑保持上游实现。
+
+---
+
+## Upstream: v2rayNG
 
 A V2Ray client for Android, support [Xray core](https://github.com/XTLS/Xray-core) and [v2fly core](https://github.com/v2fly/v2ray-core)
 
