@@ -21,6 +21,7 @@ import com.v2ray.ang.fmt.V2rayNFmt
 import com.v2ray.ang.fmt.VlessFmt
 import com.v2ray.ang.fmt.VmessFmt
 import com.v2ray.ang.fmt.WireguardFmt
+import com.v2ray.ang.util.ClashSubParser
 import com.v2ray.ang.util.HttpUtil
 import com.v2ray.ang.util.JsonUtil
 import com.v2ray.ang.util.LogUtil
@@ -590,6 +591,28 @@ object AngConfigManager {
         }
         if (count <= 0) {
             count = parseCustomConfigServer(server, subid, append)
+        }
+        if (count <= 0) {
+            count = parseClashConfigServer(server, subid, append)
+        }
+        return count
+    }
+
+    /**
+     * CK v2ray: Clash 订阅自动转换。
+     * 内容为 Clash YAML(顶层含 proxies)时, 逐个 proxy 生成 share link 后复用原生 fmt 解析导入。
+     */
+    private fun parseClashConfigServer(server: String?, subid: String, append: Boolean): Int {
+        if (server == null || !ClashSubParser.looksLikeClash(server)) {
+            return 0
+        }
+        val links = ClashSubParser.toShareLinks(server)
+        if (links.isEmpty()) {
+            return 0
+        }
+        val count = parseBatchConfig(links.joinToString("\n"), subid, append)
+        if (count > 0) {
+            LogUtil.i(AppConfig.TAG, "Clash subscription converted: ${links.size} proxies, $count imported")
         }
         return count
     }
