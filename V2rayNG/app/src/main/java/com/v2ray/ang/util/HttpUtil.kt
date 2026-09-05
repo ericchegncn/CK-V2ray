@@ -152,7 +152,9 @@ object HttpUtil {
             if (currentUrl == null) continue
             val client = buildOkHttpClient(request.timeout, request.httpPort, request.proxyUsername, request.proxyPassword, followRedirects = false)
             val finalUserAgent = if (request.userAgent.isNullOrBlank()) {
-                "v2rayNG/${BuildConfig.VERSION_NAME}"
+                // CK v2ray: 默认用 Clash 系 UA — 许多机场按 UA 区分返回格式,
+                // 对 v2rayNG UA 直接返回空; clash UA 能拿到完整订阅, 再由内置转换器转回 v2ray
+                "ClashMetaForAndroid/2.11.33"
             } else {
                 request.userAgent
             }

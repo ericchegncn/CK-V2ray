@@ -62,7 +62,8 @@ object ClashSubParser {
                 "trojan" -> trojanToLink(p, name, server, port)
                 "ss" -> ssToLink(p, name, server, port)
                 "socks5" -> socksToLink(p, name, server, port)
-                else -> null // ssr/wireguard/hysteria2/tuic/anytls 等暂不支持
+                "hysteria2" -> hysteria2ToLink(p, name, server, port)
+                else -> null // ssr/wireguard/tuic/anytls 等暂不支持
             }
         } catch (e: Exception) {
             null
@@ -253,6 +254,24 @@ object ClashSubParser {
         val password = p.str("password")
         val cred = if (username != null && password != null) "$username:$password@" else ""
         return "socks5://$cred$server:$port#${enc(name)}"
+    }
+
+    // ---------- hysteria2 (v2rayNG 2.3.5 经 Hysteria2Fmt 支持) ----------
+
+    private fun hysteria2ToLink(p: Map<String, Any?>, name: String, server: String, port: Int): String? {
+        val password = p.str("password") ?: p.str("auth") ?: return null
+        val sni = p.str("sni")
+        val skipVerify = p.bool("skip-cert-verify")
+        val obfsPassword = p.str("obfs-password")
+        val sb = StringBuilder("hy2://").append(enc(password)).append('@')
+            .append(server).append(':').append(port).append('?')
+        appendParam(sb, "sni", sni)
+        if (skipVerify) appendParam(sb, "insecure", "1")
+        // clash obfs: salamander; 有 obfs-password 才需要携带
+        if (obfsPassword != null && p.str("obfs") == "salamander") {
+            appendParam(sb, "obfs-password", obfsPassword)
+        }
+        return sb.toString().removeSuffix("&") + "#" + enc(name)
     }
 
     // ---------- helpers ----------

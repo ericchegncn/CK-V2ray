@@ -4,6 +4,7 @@ import android.text.TextUtils
 import android.util.Base64
 import android.util.Log
 import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.fmt.Hysteria2Fmt
 import com.v2ray.ang.fmt.ShadowsocksFmt
 import com.v2ray.ang.fmt.TrojanFmt
 import com.v2ray.ang.fmt.VlessFmt
@@ -86,6 +87,15 @@ class ClashSubParserTest {
             cipher: aes-256-gcm
             password: secret123
             udp: true
+          - name: HY2-NODE
+            type: hysteria2
+            server: hy.example.com
+            port: 443
+            password: hy2pass
+            sni: hy.example.com
+            skip-cert-verify: true
+            obfs: salamander
+            obfs-password: obfs-secret
           - name: RU-SSR
             type: ssr
             server: 9.9.9.9
@@ -207,10 +217,24 @@ class ClashSubParserTest {
 
     @Test
     fun skipsUnsupportedProxyTypes() {
-        // sampleYaml 含 1 个 ssr(不支持), 应只剩 4 条
+        // sampleYaml 含 1 个 ssr(不支持), 其余 5 条应全部转换
         val links = ClashSubParser.toShareLinks(sampleYaml)
-        assertEquals(4, links.size)
+        assertEquals(5, links.size)
         assertFalse(links.any { it.startsWith("ssr://") })
+    }
+
+    @Test
+    fun convertsHysteria2_roundTrip() {
+        val links = ClashSubParser.toShareLinks(sampleYaml)
+        val hy2Link = links.first { it.startsWith("hy2://") }
+        assertTrue(hy2Link.contains("obfs-password="))
+        val config = Hysteria2Fmt.parse(hy2Link)
+        assertNotNull(config)
+        assertEquals(EConfigType.HYSTERIA2, config.configType)
+        assertEquals("HY2-NODE", config.remarks)
+        assertEquals("hy.example.com", config.server)
+        assertEquals("443", config.serverPort)
+        assertEquals("hy2pass", config.password)
     }
 
     @Test
