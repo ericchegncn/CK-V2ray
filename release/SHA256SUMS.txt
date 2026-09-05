@@ -1,1 +1,1 @@
-21c3b55c4bb5bd5a5219fec347158955768c859a94516a66d6724f3e3cddd02d  CK-V2ray-2.3.5-ck.6-arm64-v8a.apk
+a48f6002dc8355aaab92cefc57188e5fc0d4b37b4b215fa01ce9fce4bc009ee6  CK-V2ray-2.3.5-ck.8-arm64-v8a.apk
