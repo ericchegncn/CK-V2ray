@@ -45,6 +45,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // CK v2ray: 无独立签名密钥, 回退 debug keystore (产物可直接安装)
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
