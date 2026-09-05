@@ -614,11 +614,17 @@ object AngConfigManager {
         if (links.isEmpty()) {
             return 0
         }
-        val count = parseBatchConfig(links.joinToString("\n"), subid, append)
-        if (count > 0) {
-            LogUtil.i(AppConfig.TAG, "Clash subscription converted: ${links.size} proxies, $count imported")
+        val subItem = MmkvManager.decodeSubscription(subid)
+        val configs = links.mapNotNull { parseConfig(it, subid, subItem) }
+        if (configs.isEmpty()) {
+            return 0
         }
-        return count
+        // CK v2ray: hy2 自签证书节点自动抓取证书指纹固定, 导入后开箱即用
+        // (Xray core 26.2.6+ 禁 allowInsecure; 抓取失败静默, 保留 insecure 供手动处理)
+        CertificateFingerprintManager.batchFetchForHy2(configs)
+        commitProfiles(configs.map(::ParsedProfile), subid, append)
+        LogUtil.i(AppConfig.TAG, "Clash subscription converted: ${links.size} proxies, ${configs.size} imported")
+        return configs.size
     }
 
     /**

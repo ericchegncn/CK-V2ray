@@ -5,6 +5,7 @@ import com.v2ray.ang.dto.CertSha256Request
 import com.v2ray.ang.dto.CertSha256Result
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.extension.isNotNullEmpty
 import com.v2ray.ang.util.HttpUtil
 import com.v2ray.ang.util.JsonUtil
 import com.v2ray.ang.util.LogUtil
@@ -75,5 +76,59 @@ object CertificateFingerprintManager {
     private fun inferServerName(profile: ProfileItem): String? {
         val sni = profile.sni?.takeIf { it.isNotBlank() }
         return sni?.takeUnless { Utils.isPureIpAddress(it) }
+    }
+
+    /**
+     * CK v2ray: 订阅导入后批量自动抓取 hy2 自签证书指纹(按 server:port 去重并发)。
+     * Xray core 26.2.6+ 不再允许 allowInsecure, 自签证书节点必须固定 pinnedCA256 才能连接。
+     * 成功: 填入 pinnedCA256 并关闭 insecure → 节点开箱即用;
+     * 失败(网络不可达等): 静默保留原状, 用户可手动获取或网络可达后重新更新订阅自动补抓。
+     */
+    fun batchFetchForHy2(configs: List<ProfileItem>) {
+        val targets = configs.filter {
+            it.configType == EConfigType.HYSTERIA2 &&
+                it.insecure == true &&
+                it.pinnedCA256.isNullOrEmpty() &&
+                it.server.isNotNullEmpty()
+        }
+        if (targets.isEmpty()) return
+
+        val groups = targets.groupBy { "${it.server}:${it.serverPort}" }
+        val results = java.util.concurrent.ConcurrentHashMap<String, String>()
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(
+            minOf(4, groups.size).coerceAtLeast(1)
+        )
+        val latch = java.util.concurrent.CountDownLatch(groups.size)
+
+        groups.keys.forEach { key ->
+            pool.execute {
+                try {
+                    val profile = targets.first { "${it.server}:${it.serverPort}" == key }
+                    fetchForManualFill(profile)?.let { results[key] = it }
+                } catch (_: Exception) {
+                    // 静默失败
+                } finally {
+                    latch.countDown()
+                }
+            }
+        }
+        try {
+            latch.await(15, java.util.concurrent.TimeUnit.SECONDS)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+        pool.shutdownNow()
+
+        var fetched = 0
+        targets.forEach { cfg ->
+            results["${cfg.server}:${cfg.serverPort}"]?.let { fp ->
+                cfg.pinnedCA256 = fp
+                cfg.insecure = false
+                fetched++
+            }
+        }
+        if (fetched > 0) {
+            LogUtil.i(AppConfig.TAG, "Auto fetched cert fingerprint for $fetched hysteria2 node(s)")
+        }
     }
 }
