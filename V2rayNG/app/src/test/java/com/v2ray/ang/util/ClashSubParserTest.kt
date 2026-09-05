@@ -218,4 +218,64 @@ class ClashSubParserTest {
         assertTrue(ClashSubParser.toShareLinks("plain text").isEmpty())
         assertTrue(ClashSubParser.toShareLinks(null).isEmpty())
     }
+
+    // ---------- 真实世界风格 clash 订阅 ----------
+
+    @Test
+    fun realWorldClashSubscription() {
+        // 模仿机场订阅: 注释/emoji 名称/flow 风格 map/带引号值
+        val realYaml = """
+            # Profile: AirPort Example
+            mixed-port: 7890
+            allow-lan: false
+            mode: rule
+            proxies:
+              - name: "🇭🇰 HK 香港 01"
+                type: vmess
+                server: hk01.example.com
+                port: 443
+                uuid: 33333333-4444-5555-6666-777777777777
+                alterId: 0
+                cipher: auto
+                udp: true
+                tls: true
+                client-fingerprint: chrome
+                skip-cert-verify: false
+                servername: hk01.example.com
+                network: ws
+                ws-opts: {path: /data, headers: {Host: hk01.example.com}}
+              - name: '🇯🇵 JP 东京'
+                type: trojan
+                server: jp01.example.com
+                port: 443
+                password: "trojan-pass-01"
+                udp: true
+                sni: jp01.example.com
+                skip-cert-verify: true
+                network: ws
+                ws-opts:
+                  path: /tr
+                  headers:
+                    Host: jp01.example.com
+            proxy-groups:
+              - name: PROXY
+                type: select
+                proxies: [DIRECT]
+            rules:
+              - MATCH,PROXY
+        """.trimIndent()
+        val links = ClashSubParser.toShareLinks(realYaml)
+        assertEquals(2, links.size)
+        assertTrue(links[0].startsWith("vmess://"))
+        assertTrue(links[1].startsWith("trojan://"))
+
+        // emoji 名称经回验保留
+        val vmessConfig = VmessFmt.parse(links[0])
+        assertNotNull(vmessConfig)
+        assertEquals("🇭🇰 HK 香港 01", vmessConfig!!.remarks)
+        val trojanConfig = TrojanFmt.parse(links[1])
+        assertNotNull(trojanConfig)
+        assertEquals("🇯🇵 JP 东京", trojanConfig!!.remarks)
+        assertEquals(true, trojanConfig.insecure)
+    }
 }

@@ -190,6 +190,9 @@ object AngConfigManager {
             if (count <= 0) {
                 count = parseCustomConfigServer(server, subid, append)
             }
+            if (count <= 0) {
+                count = parseClashConfigServer(server, subid, append)
+            }
 
             var countSub = parseBatchSubscription(server)
             if (countSub <= 0) {
@@ -603,9 +606,10 @@ object AngConfigManager {
      * 内容为 Clash YAML(顶层含 proxies)时, 逐个 proxy 生成 share link 后复用原生 fmt 解析导入。
      */
     private fun parseClashConfigServer(server: String?, subid: String, append: Boolean): Int {
-        if (server == null || !ClashSubParser.looksLikeClash(server)) {
+        if (server == null) {
             return 0
         }
+        // toShareLinks 内部完成嗅探(clash yaml + proxies), 非 clash 返回空列表
         val links = ClashSubParser.toShareLinks(server)
         if (links.isEmpty()) {
             return 0

@@ -38,7 +38,8 @@ object ClashSubParser {
         if (text.isNullOrBlank()) return null
         val root = try {
             yaml.load<Any>(text.trimStart('\uFEFF'))
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
+            // 含 Error: Android 上 snakeyaml 若引用缺失类时兜底, 视为非 clash 内容
             return null
         }
         if (root !is Map<*, *>) return null
@@ -280,5 +281,7 @@ object ClashSubParser {
         sb.append(key).append('=').append(enc(value)).append('&')
     }
 
-    private fun enc(s: String): String = URLEncoder.encode(s, "UTF-8")
+    /** fragment 名称编码: 生态惯例 %20 而非 +(v2rayNG decodeURIComponent 不解 +) */
+    private fun enc(s: String): String =
+        URLEncoder.encode(s, "UTF-8").replace("+", "%20")
 }
